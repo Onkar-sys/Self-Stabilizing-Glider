@@ -31,7 +31,7 @@ Servo aileronServo;
 #include <PID_v1.h>
 double ElevatorSetpoint, ElevatorInput, ElevatorOutput;
 
-double ElevatorKp=2, ElevatorKi=5, ElevatorKd=1;
+double ElevatorKp=2, ElevatorKi=0, ElevatorKd=5;
 PID ElevatorPID(&ElevatorInput, &ElevatorOutput, &ElevatorSetpoint, ElevatorKp, ElevatorKi, ElevatorKd, DIRECT);
 
 
@@ -58,7 +58,7 @@ void setup(){
 
 
   elevatorServo.attach(4);
-  aileronServo.attach(5);
+  aileronServo.attach(6);
 
   delay(200);
 
@@ -67,12 +67,13 @@ void setup(){
 
   ///////////////////////////////////
   //ElevatorInput = ;
-  ElevatorSetpoint = 100;
+  AileronSetpoint = 90;
+  ElevatorSetpoint = 90;;
 
   //turn the PID on
   ElevatorPID.SetMode(AUTOMATIC);
   AileronPID.SetMode(AUTOMATIC);
-
+  delay(100);
 
 }
 
@@ -86,15 +87,27 @@ void setup(){
 
 
 void loop() {
-
+    
+    //ControlServos();
     sensors_event_t a, g, temp;
     mpu.getEvent(&a, &g, &temp);
-
    rollAccel =  a.acceleration.x;
    pitchAccel =  a.acceleration.y;
-
-  
-
+//   Serial.print(rollAccel);
+//   Serial.print("  ");
+//   Serial.print(pitchAccel);
+//   Serial.print("  ");
+   rollAccel = map(rollAccel,-10,10,0,180);
+   pitchAccel = map(pitchAccel,-10,10,0,180);
+  Serial.print(rollAccel);
+   Serial.print("  ");
+   Serial.print(pitchAccel);
+   Serial.print("  ");
+delay(100);
+  TxInput();
+  ElevatorPIDControl();
+ // AileronPIDControl();
+  Serial.println("   ");
 }
 
 
@@ -102,8 +115,46 @@ void loop() {
 void TxInput(){
   elevatorRxVal = elevatorRx.getValue();
   aileronRxVal = aileronRx.getValue();
-  AileronSetpoint = map(aileronRxVal,1000,2000,0,180);
-  ElevatorSetpoint = map(elevatorRxVal,1000,2000,0,180);
+//  Serial.print(elevatorRxVal);
+//  Serial.print("  ");
+//  Serial.print(aileronRxVal);
+//  Serial.print("  ");
+  AileronSetpoint = map(aileronRxVal,1000,2000,-50,250);
+  ElevatorSetpoint = map(elevatorRxVal,1000,2000,-50,250);
+//    Serial.print(ElevatorSetpoint);
+//     Serial.print("  ");
+//    Serial.print(AileronSetpoint);
+//    Serial.println("  ");
   //AileronSetpoint = aileronRxVal;
   //ElevatorSetpoint = elevatorRxVal;
+}
+
+
+
+
+void ControlServos(){                //Temporary loop..... Delete later
+  elevatorServo.write(ElevatorSetpoint);
+  aileronServo.write(AileronSetpoint);
+}
+
+
+
+void AccelData(){
+  
+}
+
+
+void ElevatorPIDControl(){
+  ElevatorInput = pitchAccel;
+  ElevatorPID.Compute();
+  elevatorServo.write(ElevatorOutput);
+  Serial.print(ElevatorOutput);
+}
+
+
+void AileronPIDControl(){
+  AileronInput = rollAccel;
+  AileronPID.Compute();
+  aileronServo.write(AileronOutput);
+  Serial.print(AileronOutput);
 }
